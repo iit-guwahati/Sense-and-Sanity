@@ -1,3 +1,21 @@
+/***************Copyright 2012 Ajaykumar Kannan******************************
+
+This file is part of Sense and Sanity.
+
+Sense and Sanity is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Sense and Sanity is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Sense and Sanity.  If not, see <http://www.gnu.org/licenses/>.
+****************************************************************************/
+
 package com.ajaykumar.sense;
 
 import android.app.Notification;
@@ -21,11 +39,15 @@ import android.view.KeyEvent;
 import android.widget.Toast;
 
 public class SenseBckgnd extends Service implements SensorEventListener {
+	private int MAX = 100;
+
 	private SensorManager mSensorManager;
 	private float[] mGravs = new float[3];
 	private float[] mGeoMags = new float[3];
 	private float[] mOrientation = new float[3];
 	private float[] mRotationM = new float[9];
+	private int speakerVolume, headsetVolume;
+	private int volMax = 0;
 
 	private boolean upsidedownCurrentState = false;
 	private boolean upsidedownLastState = false;
@@ -64,6 +86,8 @@ public class SenseBckgnd extends Service implements SensorEventListener {
 		flipForSpeaker = flags.getBoolean("flipforspeaker", true);
 		silenceFlip = flags.getBoolean("silenceflip", true);
 		pickupAnswer = flags.getBoolean("answerPickup", true);
+		speakerVolume = flags.getInt("speakervolume", MAX);
+		headsetVolume = flags.getInt("headsetvolume", MAX);
 
 		if (flipForSpeaker || silenceFlip) {
 			/************** Sensor Code *******************/
@@ -79,7 +103,13 @@ public class SenseBckgnd extends Service implements SensorEventListener {
 					mSensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY),
 					SensorManager.SENSOR_DELAY_UI);
 			myaudio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+			volMax = myaudio.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL);
+			speakerVolume *= volMax;
+			speakerVolume /= 100;
+			headsetVolume *= volMax;
+			headsetVolume /= 100;
 			ringerState = myaudio.getRingerMode();
+
 		}
 
 		mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
@@ -133,7 +163,7 @@ public class SenseBckgnd extends Service implements SensorEventListener {
 		default:
 			return;
 		}
-		if (currTime.toMillis(true) - initTime.toMillis(true) > 1000) {
+		if (currTime.toMillis(true) - initTime.toMillis(true) > 500) {
 			if (SensorManager.getRotationMatrix(mRotationM, null, mGravs,
 					mGeoMags)) {
 				orientationInit = true;
@@ -154,6 +184,9 @@ public class SenseBckgnd extends Service implements SensorEventListener {
 									"Speaker ON", Toast.LENGTH_SHORT).show();
 							upsidedownLastState = upsidedownCurrentState;
 							myaudio.setSpeakerphoneOn(true);
+							myaudio.setStreamVolume(
+									AudioManager.STREAM_VOICE_CALL,
+									speakerVolume, AudioManager.FLAG_VIBRATE);
 							Log.v("DEBUG", "Speaker ON");
 						}
 					} else {
@@ -163,6 +196,9 @@ public class SenseBckgnd extends Service implements SensorEventListener {
 									"Speaker OFF", Toast.LENGTH_SHORT).show();
 							upsidedownLastState = upsidedownCurrentState;
 							myaudio.setSpeakerphoneOn(false);
+							myaudio.setStreamVolume(
+									AudioManager.STREAM_VOICE_CALL,
+									headsetVolume, AudioManager.FLAG_VIBRATE);
 							Log.v("DEBUG", "Speaker OFF");
 						}
 					}
@@ -182,12 +218,10 @@ public class SenseBckgnd extends Service implements SensorEventListener {
 					} else {
 						if ((myabs(pitch) < 20) && (myabs(roll) > 160)) {
 							// Silence call
-							if (!silenced) {
-								if (silenceFlip) {
-									Log.v("DEBUG", "Silencing Call");
-									myaudio.setRingerMode(AudioManager.RINGER_MODE_SILENT);
-									silenced = true;
-								}
+							if (!silenced && silenceFlip) {
+								Log.v("DEBUG", "Silencing Call");
+								myaudio.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+								silenced = true;
 							}
 						} else if (prox < 1) {
 							// Answer phone
@@ -196,7 +230,7 @@ public class SenseBckgnd extends Service implements SensorEventListener {
 									return;
 								}
 								Log.v("DEBUG", "Answer Call");
-								// Answer the phone	
+								// Answer the phone
 								answerPhoneHeadsethook(this.getBaseContext());
 							}
 						}
@@ -212,16 +246,24 @@ public class SenseBckgnd extends Service implements SensorEventListener {
 		return in > 0 ? in : -in;
 	}
 
-	// Got help from
-	// http://code.google.com/p/auto-answer/source/browse/trunk/src/com/everysoft/autoanswer/AutoAnswerIntentService.java
 	private void answerPhoneHeadsethook(Context context) {
 		// Simulate a press of the headset button to pick up the call
+		Intent buttonDown = new Intent(Intent.ACTION_MEDIA_BUTTON);
+		buttonDown.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(
+				KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_HEADSETHOOK));
+		context.sendOrderedBroadcast(buttonDown,
+				"android.permission.CALL_PRIVILEGED");
+
+		// froyo and beyond trigger on buttonUp instead of buttonDown
 		Intent buttonUp = new Intent(Intent.ACTION_MEDIA_BUTTON);
 		buttonUp.putExtra(Intent.EXTRA_KEY_EVENT, new KeyEvent(
 				KeyEvent.ACTION_UP, KeyEvent.KEYCODE_HEADSETHOOK));
 		context.sendOrderedBroadcast(buttonUp,
 				"android.permission.CALL_PRIVILEGED");
-		
-		myaudio.setMicrophoneMute(false);
+
+		if(myaudio.isMicrophoneMute()){
+			Log.v("DEBUG", "Microphone mute");
+			myaudio.setMicrophoneMute(false);
+		}
 	}
 }
