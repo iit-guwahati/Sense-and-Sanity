@@ -1,3 +1,24 @@
+<!--
+
+Copyright 2012 Ajaykumar Kannan
+
+This file is part of Sense and Sanity.
+
+Sense and Sanity is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Sense and Sanity is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Sense and Sanity.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
+
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
@@ -27,6 +48,57 @@
         android:layout_height="wrap_content"
         android:text="@string/enablesilence"
         android:textColor="#EEEEEE" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/volumestring"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="#EEEEEE" />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:text="@string/headsetstring"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textColor="#EEEEEE" />
+
+        <SeekBar
+            android:id="@+id/headsetBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="10dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:text="@string/speakerstring"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textColor="#EEEEEE" />
+
+        <SeekBar
+            android:id="@+id/speakerBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="10dp" />
+    </LinearLayout>
 
     <CheckBox
         android:id="@+id/pickupBox"
